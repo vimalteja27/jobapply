@@ -1,0 +1,46 @@
+2026-06-14 17:04:43,013 [INFO] 
+════════════════════════════════════════════════════════════
+  Role: Business Analyst
+════════════════════════════════════════════════════════════
+2026-06-14 17:04:43,014 [INFO] 
+[1] Job boards: Indeed + Google Jobs...
+2026-06-14 17:04:43,527 [INFO] NumExpr defaulting to 8 threads.
+2026-06-14 17:04:44,060 [INFO]   [Indeed] 'Business Analyst' across 12 US regions...
+2026-06-14 17:04:46,479 [INFO]   [indeed/Tampa] 131 jobs | 0 new ATS
+2026-06-14 17:04:49,319 [INFO]   [indeed/New York] 200 jobs | 0 new ATS
+2026-06-14 17:04:52,274 [INFO]   [indeed/Chicago] 200 jobs | 0 new ATS
+2026-06-14 17:04:55,171 [INFO]   [indeed/Dallas] 200 jobs | 0 new ATS
+2026-06-14 17:04:58,053 [INFO]   [indeed/Atlanta] 200 jobs | 0 new ATS
+2026-06-14 17:05:00,923 [INFO]   [indeed/Washington] 200 jobs | 0 new ATS
+2026-06-14 17:05:04,041 [INFO]   [indeed/Houston] 176 jobs | 0 new ATS
+2026-06-14 17:05:07,099 [INFO]   [indeed/Los Angeles] 200 jobs | 0 new ATS
+2026-06-14 17:05:09,878 [INFO]   [indeed/San Francisco] 200 jobs | 0 new ATS
+2026-06-14 17:05:12,751 [INFO]   [indeed/Seattle] 200 jobs | 0 new ATS
+2026-06-14 17:05:16,059 [INFO]   [indeed/Boston] 200 jobs | 0 new ATS
+2026-06-14 17:05:18,799 [INFO]   [indeed/Austin] 200 jobs | 0 new ATS
+2026-06-14 17:05:19,304 [INFO]   [Google Jobs] 'Business Analyst'...
+2026-06-14 17:05:19,816 [INFO]   [Job boards total] 2307 unique jobs for 'Business Analyst'
+2026-06-14 17:05:19,840 [INFO]   414 relevant (36.8s)
+2026-06-14 17:05:19,840 [INFO] 
+[2] Glassdoor...
+2026-06-14 17:05:21,321 [INFO]   [Glassdoor] Loading search page (attempt 1/2)...
+2026-06-14 17:06:56,271 [INFO]   [Glassdoor] 30 jobs for 'Business Analyst'
+2026-06-14 17:06:56,272 [INFO]   5 relevant (96.4s)
+2026-06-14 17:06:56,272 [INFO] 
+[3] ATS platforms (all dynamically discovered companies)...
+2026-06-14 17:06:56,272 [INFO] 
+[2/4] SERP discovery (DuckDuckGo → ATS companies)...
+2026-06-14 17:07:11,600 [INFO] 
+[3/4] Scraping all discovered companies from their ATS APIs...
+2026-06-14 17:07:11,603 [INFO] 
+[4/4] Workday enterprise scraping...
+2026-06-14 17:07:11,603 [INFO]   0 ATS jobs (15.3s)
+2026-06-14 17:07:11,603 [INFO] 
+[4] Career page watcher (5,000+ product companies)...
+2026-06-14 17:07:11,614 [INFO]   [Companies] Downloading open-source company datasets...
+2026-06-14 17:07:11,807 [INFO]   [Companies] greenhouse_companies.json: +8180 greenhouse companies
+2026-06-14 17:07:11,968 [INFO]   [Companies] lever_companies.json: +4368 lever companies
+2026-06-14 17:07:12,113 [INFO]   [Companies] ashby_companies.json: +2985 ashby companies
+2026-06-14 17:07:12,308 [INFO]   [Companies] bamboohr_companies.json: +11060 bamboohr companies
+2026-06-14 17:07:12,606 [INFO]   [Companies] Total: 26593 companies across 4 ATSes (+26593 new from datasets)
+2026-06-14 17:07:12,612 [INFO]   [Companies] Watching 26674 companies total

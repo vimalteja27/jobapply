@@ -1,0 +1,25 @@
+# Core
+python-jobspy>=1.1.82
+playwright>=1.44.0
+groq
+requests
+pyyaml
+
+# AI / PDF
+weasyprint
+
+# Google APIs
+gspread
+google-auth
+google-auth-oauthlib
+google-api-python-client
+
+# Review UI (approve-before-send)
+fastapi
+uvicorn
+
+# Email
+# (uses built-in smtplib + imaplib — no extra package needed)
+
+# Testing
+pytest
