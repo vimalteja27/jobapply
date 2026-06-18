@@ -29,9 +29,7 @@ profile:
 search:
   roles:                             # Add as many as you want
     - "Business Analyst"
-    - "Business Transformation Analyst"
     - "Product Owner"
-    - "Process Improvement Analyst"
   location: "Tampa, FL"              # anchor for Glassdoor/Indeed/LinkedIn; remote + nationwide jobs still included via is_remote and Google Jobs
   remote_only: false                 # true = remote jobs only
   min_fit_score: 4                    # apply if AI scores 4+/10 — cast wide net                   # 1–10; jobs below this are skipped
@@ -44,18 +42,9 @@ search:
   blacklist_companies:               # never apply to these
     # Consulting / IT services / staffing — product companies only
     - "Capco"
-    - "Infosys"
-    - "Tata Consultancy"
-    - "Wipro"
-    - "HCL Technologies"
-    - "Cognizant"
-    - "Accenture"
-    - "Capgemini"
-    - "Deloitte"
     - "Booz Allen"
     - "Leidos"
     - "SAIC"
-    - "DXC Technology"
     - "NTT Data"
     - "Apex Systems"
     - "Insight Global"
