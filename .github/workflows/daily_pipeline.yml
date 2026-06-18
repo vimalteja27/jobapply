@@ -1,0 +1,71 @@
+name: ApplyRyt Job Bot
+
+on:
+  schedule:
+    - cron: '*/20 * * * *'   # every 20 minutes, every day
+  workflow_dispatch:           # allows manual trigger from GitHub UI
+
+concurrency:
+  group: applyryt-pipeline
+  cancel-in-progress: false   # let a running job finish, don't overlap
+
+jobs:
+  apply:
+    name: Find and apply to jobs
+    runs-on: ubuntu-latest
+    timeout-minutes: 30   # expected runtime ~11 min with per-run cap; 30 min gives headroom
+                           # for slow Glassdoor/watcher days without risking pile-up against
+                           # the 20-minute cron interval
+    permissions:
+      contents: write           # needed to commit state files back
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install system dependencies (for weasyprint PDF generation)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libpango-1.0-0 libpangocairo-1.0-0 \
+            libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
+
+      - name: Install Python dependencies
+        run: |
+          cd applyryt_clone
+          pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: |
+          cd applyryt_clone
+          playwright install chromium
+          playwright install-deps chromium
+
+      - name: Run job application pipeline
+        run: |
+          cd applyryt_clone
+          python main.py
+        env:
+          GROQ_API_KEY:            ${{ secrets.GROQ_API_KEY }}        # required
+          GMAIL_APP_PASSWORD:      ${{ secrets.GMAIL_APP_PASSWORD }}  # required, for email summaries
+          GSHEET_CREDENTIALS_JSON: ${{ secrets.GSHEET_CREDENTIALS_JSON }}  # OPTIONAL — leave unset
+                                                                            # to use local Excel logging
+                                                                            # (logs/applications.xlsx) instead
+
+      - name: Save state (applied jobs, slug cache, daily count, Excel log)
+        if: always()
+        run: |
+          cd applyryt_clone
+          git config user.name  "applyryt-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add logs/applied.json logs/daily_count.json \
+                  logs/slug_cache.json logs/seen_jobs.json \
+                  logs/applications.xlsx 2>/dev/null || true
+          git diff --staged --quiet || \
+            git commit -m "chore: update state [skip ci]"
+          git push || true
