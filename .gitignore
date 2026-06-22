@@ -7,4 +7,5 @@ oauth_client.json
 __pycache__/
 *.pyc
 .pytest_cache/
-.DS_Store
+logs/workday_account.json
+logs/resumes/

@@ -1,0 +1,25 @@
+In your .github/workflows/daily_pipeline.yml, add WORKDAY_PASSWORD to the
+env section of the "Run job application pipeline" step.
+
+FIND this in your workflow file:
+        env:
+          GROQ_API_KEY:            ${{ secrets.GROQ_API_KEY }}
+          GMAIL_APP_PASSWORD:      ${{ secrets.GMAIL_APP_PASSWORD }}
+          GSHEET_CREDENTIALS_JSON: ${{ secrets.GSHEET_CREDENTIALS_JSON }}
+
+REPLACE with:
+        env:
+          GROQ_API_KEY:            ${{ secrets.GROQ_API_KEY }}
+          GMAIL_APP_PASSWORD:      ${{ secrets.GMAIL_APP_PASSWORD }}
+          GSHEET_CREDENTIALS_JSON: ${{ secrets.GSHEET_CREDENTIALS_JSON }}
+          WORKDAY_PASSWORD:        ${{ secrets.WORKDAY_PASSWORD }}
+
+Then go to GitHub repo → Settings → Secrets and variables → Actions
+→ New repository secret, and add:
+  Name:  WORKDAY_PASSWORD
+  Value: (a strong password, min 8 chars, must have upper, lower, number, special char)
+         Example: MyApply@2026
+
+This password is used to create ONE Workday applicant account with your email
+(vimalteja.m@gmail.com) that works across ALL Workday job applications.
+You only set this once — the same password is reused for every Workday company.

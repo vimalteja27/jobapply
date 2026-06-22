@@ -115,15 +115,13 @@ def collect_all_jobs(role: str) -> list[dict]:
     log.info(f"  {len(ats_jobs)} ATS jobs ({time.time()-t0:.1f}s)")
     all_jobs.extend(ats_jobs)
 
-    # STEP 4: Career page watcher (50,000+ companies, new jobs only)
-    log.info("\n[4] Career page watcher (5,000+ product companies)...")
-    t0 = time.time()
-    try:
-        new_jobs = watch_and_find_new([role])
-        log.info(f"  {len(new_jobs)} NEW jobs from career pages ({time.time()-t0:.1f}s)")
-        all_jobs.extend(new_jobs)
-    except Exception as e:
-        log.warning(f"  Watcher: {e}")
+    # NOTE: Career page watcher is NOT run here. It already accepts a list
+    # of roles and filters against all of them in a single pass over the
+    # company sample — see watch_and_find_new() below. Running it once per
+    # role (as before) re-scanned the same ~2,000 sampled companies once
+    # per configured role for zero benefit, multiplying the slowest step
+    # in the whole pipeline by len(roles). It now runs ONCE in run(),
+    # outside this per-role loop.
 
     log.info(f"\n  Raw total for '{role}': {len(all_jobs)} jobs")
     for j in all_jobs:
@@ -131,7 +129,22 @@ def collect_all_jobs(role: str) -> list[dict]:
     return all_jobs
 
 
+def _tag_watcher_jobs_with_role(jobs: list[dict], roles: list[str]) -> None:
+    """
+    Watcher jobs are matched against ALL roles at once, so unlike
+    collect_all_jobs() we can't assume a single role. Tag each job with
+    whichever configured role its title actually matches (first match wins;
+    titles are checked in the same order roles are configured).
+    """
+    for j in jobs:
+        title = j.get("title", "")
+        matched = next((r for r in roles if role_matches(title, r)), roles[0] if roles else "")
+        j["searched_role"] = matched
+
+
 def run():
+    run_start_time = time.time()
+
     cfg       = get_config()
     roles     = cfg["search"]["roles"]
     daily_cap = cfg["search"]["daily_cap"]
@@ -156,6 +169,19 @@ def run():
     raw = []
     for role in roles:
         raw.extend(collect_all_jobs(role))
+
+    # Career page watcher — runs ONCE across all configured roles
+    # (it already accepts a role list and matches against all of them
+    # in a single pass), instead of once per role inside the loop above.
+    log.info(f"\n{'═'*60}\n  Career page watcher (all roles: {', '.join(roles)})\n{'═'*60}")
+    t0 = time.time()
+    try:
+        watcher_jobs = watch_and_find_new(roles)
+        _tag_watcher_jobs_with_role(watcher_jobs, roles)
+        log.info(f"  {len(watcher_jobs)} NEW jobs from career pages ({time.time()-t0:.1f}s)")
+        raw.extend(watcher_jobs)
+    except Exception as e:
+        log.warning(f"  Watcher: {e}")
 
     jobs = deduplicate(raw)
     jobs = filter_jobs(jobs)
@@ -210,12 +236,39 @@ def run():
 
     applied_this_run = 0
 
+    # TIME-BUDGET SAFETY GUARD — critical for GitHub Actions.
+    # Discovery time is NOT constant: e.g. one observed run had Lever
+    # watcher scraping take 5x longer than Greenhouse for the identical
+    # 500-company workload (316s vs 59s), likely due to upstream API
+    # slowness. The per_run_cap above assumes a typical discovery time,
+    # but on a slow day it can leave too little real time before
+    # GitHub Actions' 30-minute hard timeout — and the WORST place for
+    # that timeout to land is mid-way through submitting a real form to
+    # an actual employer's website.
+    #
+    # This guard checks elapsed wall-clock time before each application
+    # and stops cleanly (committing whatever was already done) instead
+    # of risking a hard kill mid-submission. Any unapplied jobs simply
+    # carry over to the next scheduled run, same as hitting per_run_cap.
+    max_runtime_minutes = cfg.get("search", {}).get("max_runtime_minutes", 20)
+    max_runtime_seconds = max_runtime_minutes * 60
+
     for job in jobs:
         if applied_count >= daily_cap:
             log.info(f"\nDaily cap ({daily_cap}) reached.")
             break
         if applied_this_run >= per_run_cap:
             log.info(f"\nPer-run cap ({per_run_cap}) reached — remaining jobs carry over to next scheduled run.")
+            break
+
+        elapsed = time.time() - run_start_time
+        if elapsed >= max_runtime_seconds:
+            log.warning(
+                f"\nTime budget ({max_runtime_minutes} min) reached after {elapsed/60:.1f} min elapsed "
+                f"(discovery took longer than usual this run). Stopping cleanly here — "
+                f"remaining jobs carry over to the next scheduled run rather than risking "
+                f"a mid-submission timeout kill."
+            )
             break
 
         log.info(f"\n→ [{job['source']}] {job['title']} @ {job['company']}")
@@ -301,9 +354,20 @@ if __name__ == "__main__":
 
     elif "--list" in sys.argv:
         cfg  = get_config()
+        roles_cfg = cfg["search"]["roles"]
         raw  = []
-        for role in cfg["search"]["roles"]:
+        for role in roles_cfg:
             raw.extend(collect_all_jobs(role))
+
+        # Watcher runs once for all roles, same as in run() — see comment there.
+        print(f"\n[Watcher] Checking career pages once for all roles: {', '.join(roles_cfg)}...")
+        try:
+            watcher_jobs = watch_and_find_new(roles_cfg)
+            _tag_watcher_jobs_with_role(watcher_jobs, roles_cfg)
+            raw.extend(watcher_jobs)
+        except Exception as e:
+            log.warning(f"  Watcher: {e}")
+
         jobs = deduplicate(raw)
         jobs = filter_jobs(jobs)
         jobs = [j for j in jobs if not already_applied(j)]

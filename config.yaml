@@ -29,22 +29,44 @@ profile:
 search:
   roles:                             # Add as many as you want
     - "Business Analyst"
+    - "Business Transformation Analyst"
     - "Product Owner"
+    - "Process Improvement Analyst"
   location: "Tampa, FL"              # anchor for Glassdoor/Indeed/LinkedIn; remote + nationwide jobs still included via is_remote and Google Jobs
   remote_only: false                 # true = remote jobs only
   min_fit_score: 4                    # apply if AI scores 4+/10 — cast wide net                   # 1–10; jobs below this are skipped
-  daily_cap: 150                      # 150/day = 4,500/month (matches Tsenta Max plan)
+  daily_cap: 500                      # 500/day = 15,000/month — raised from 150 per user request
+                                       # per-run cap auto-scales with this (see main.py _h1b_priority_rank
+                                       # logic) so this stays safe within GitHub Actions' 30-min timeout
   cron_runs_per_day: 72                # must match the GitHub Actions cron schedule
                                         # (*/20 * * * * = 72 runs/day). Used to compute
                                         # a safe per-run application cap so each run
-                                        # finishes well inside the 60-min job timeout.
+                                        # finishes well inside the 30-min job timeout.
+  max_runtime_minutes: 20               # hard safety stop for the APPLY phase specifically.
+                                         # GitHub Actions workflow timeout is 30 min total;
+                                         # discovery (Indeed/Glassdoor/ATS/watcher) is variable
+                                         # and has been observed taking 8-12+ min on slow days.
+                                         # This guard stops applying cleanly once this many
+                                         # minutes have elapsed since the run started, so a
+                                         # slow discovery day can't push a real application
+                                         # submission into the timeout kill zone. Unapplied
+                                         # jobs simply carry over to the next scheduled run.
   hours_old: 360                     # only scrape jobs posted in last 360 hours (15 days)
   blacklist_companies:               # never apply to these
     # Consulting / IT services / staffing — product companies only
     - "Capco"
+    - "Infosys"
+    - "Tata Consultancy"
+    - "Wipro"
+    - "HCL Technologies"
+    - "Cognizant"
+    - "Accenture"
+    - "Capgemini"
+    - "Deloitte"
     - "Booz Allen"
     - "Leidos"
     - "SAIC"
+    - "DXC Technology"
     - "NTT Data"
     - "Apex Systems"
     - "Insight Global"
