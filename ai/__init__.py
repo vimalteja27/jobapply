@@ -12,7 +12,7 @@ For every job:
 import os, json, re, time
 from utils import log, get_config, get_master_resume
 
-MODEL   = "llama-3.3-70b-versatile"
+MODEL   = "openai/gpt-oss-120b"
 API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 TAILOR_PROMPT = """You are an expert resume writer. Tailor this candidate's resume for the specific job below.
