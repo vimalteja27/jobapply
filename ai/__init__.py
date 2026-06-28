@@ -12,7 +12,7 @@ For every job:
 import os, json, re, time
 from utils import log, get_config, get_master_resume
 
-MODEL   = "llama-3.1-8b-instant"
+MODEL = "openai/gpt-oss-20b"
 API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 TAILOR_PROMPT = """You are an expert resume writer. Tailor this candidate's resume for the specific job below.
@@ -59,6 +59,7 @@ def _call_groq(prompt: str, retries: int = 3) -> str:
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0",
     }
     payload = {
         "model":       MODEL,
