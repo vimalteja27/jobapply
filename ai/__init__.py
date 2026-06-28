@@ -35,7 +35,7 @@ Description:
 4. Reorder skills to put the most relevant ones first
 5. Write a 3-sentence cover letter opening specific to THIS job and company
 
-Return ONLY valid JSON, no markdown fences:
+Return ONLY valid JSON, no markdown fences, no reasoning text:
 {{
   "fit_score": <1-10>,
   "fit_reasoning": "<one sentence why this is a good/bad fit>",
@@ -78,7 +78,7 @@ def _call_groq(prompt: str, retries: int = 3) -> str:
             )
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read())
-            time.sleep(2)  # respect Groq's 30 RPM rate limit (max 1 req/2s)
+            time.sleep(3)  # respect Groq's 30 RPM rate limit (max 20/min safe)
             return data["choices"][0]["message"]["content"]
         except Exception as e:
             if attempt < retries:
@@ -88,7 +88,10 @@ def _call_groq(prompt: str, retries: int = 3) -> str:
 
 
 def _parse_json(raw: str) -> dict:
-    """Strip markdown fences and parse JSON."""
+    """Strip reasoning tokens and markdown fences, then parse JSON."""
+    # Strip <think>...</think> reasoning blocks from gpt-oss models
+    raw = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
+    # Strip markdown fences
     clean = re.sub(r"```(?:json)?", "", raw).strip()
     m = re.search(r"\{.*\}", clean, re.DOTALL)
     if m:

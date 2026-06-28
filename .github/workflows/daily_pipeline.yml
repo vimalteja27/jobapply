@@ -1,6 +1,8 @@
 name: ApplyRyt Job Bot
 
 on:
+  schedule:
+    - cron: "*/20 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -43,7 +45,7 @@ jobs:
           GSHEET_CREDENTIALS_JSON: ${{ secrets.GSHEET_CREDENTIALS_JSON }}
           WORKDAY_PASSWORD:        ${{ secrets.WORKDAY_PASSWORD }}
 
-      - name: Save state (applied jobs, slug cache, daily count, Excel log)
+      - name: Save state and generated resumes
         if: always()
         run: |
           git config user.name  "applyryt-bot"
@@ -52,6 +54,7 @@ jobs:
           git add logs/applied.json logs/daily_count.json \
                   logs/slug_cache.json logs/seen_jobs.json \
                   logs/applications.xlsx 2>/dev/null || true
+          git add resumes/*.pdf 2>/dev/null || true
           git diff --staged --quiet || \
-            git commit -m "chore: update state [skip ci]"
+            git commit -m "chore: update state + resumes [skip ci]"
           git push || true
