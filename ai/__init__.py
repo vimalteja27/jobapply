@@ -68,7 +68,7 @@ def _call_groq(prompt: str, retries: int = 3) -> str:
         "messages":    [{"role": "user", "content": prompt}],
     }
 
-    import urllib.request
+    import urllib.request, urllib.error
     for attempt in range(1, retries + 1):
         try:
             req = urllib.request.Request(
@@ -78,8 +78,21 @@ def _call_groq(prompt: str, retries: int = 3) -> str:
             )
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read())
-            time.sleep(3)  # respect Groq's 30 RPM rate limit (max 20/min safe)
-            return data["choices"][0]["message"]["content"]
+            content = data["choices"][0]["message"]["content"]
+            if not content.strip():
+                raise ValueError("Empty response from Groq")
+            time.sleep(5)  # 5s gap = max 12 req/min, well under 30 RPM limit
+            return content
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                wait = 15 * attempt  # 15s, 30s, 45s for rate limit hits
+                log.warning(f"  Rate limited by Groq (attempt {attempt}), "
+                           f"waiting {wait}s...")
+                time.sleep(wait)
+            elif attempt < retries:
+                time.sleep(2 ** attempt)
+            else:
+                raise e
         except Exception as e:
             if attempt < retries:
                 time.sleep(2 ** attempt)
