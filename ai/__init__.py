@@ -12,7 +12,7 @@ For every job:
 import os, json, re, time
 from utils import log, get_config, get_master_resume
 
-MODEL = "openai/gpt-oss-20b"
+MODEL   = "openai/gpt-oss-20b"
 API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 TAILOR_PROMPT = """You are an expert resume writer. Tailor this candidate's resume for the specific job below.
@@ -59,7 +59,7 @@ def _call_groq(prompt: str, retries: int = 3) -> str:
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0",
+        "User-Agent":    "Mozilla/5.0",
     }
     payload = {
         "model":       MODEL,
@@ -71,11 +71,14 @@ def _call_groq(prompt: str, retries: int = 3) -> str:
     import urllib.request
     for attempt in range(1, retries + 1):
         try:
-            req  = urllib.request.Request(API_URL, method="POST",
-                                          data=json.dumps(payload).encode(),
-                                          headers=headers)
+            req = urllib.request.Request(
+                API_URL, method="POST",
+                data=json.dumps(payload).encode(),
+                headers=headers
+            )
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read())
+            time.sleep(2)  # respect Groq's 30 RPM rate limit (max 1 req/2s)
             return data["choices"][0]["message"]["content"]
         except Exception as e:
             if attempt < retries:
@@ -87,7 +90,6 @@ def _call_groq(prompt: str, retries: int = 3) -> str:
 def _parse_json(raw: str) -> dict:
     """Strip markdown fences and parse JSON."""
     clean = re.sub(r"```(?:json)?", "", raw).strip()
-    # Find the first { ... } block
     m = re.search(r"\{.*\}", clean, re.DOTALL)
     if m:
         return json.loads(m.group(0))
@@ -109,7 +111,6 @@ def analyze_job(job: dict) -> dict | None:
                     f"— skipping AI analysis")
         return None
 
-    # Compact resume for prompt (avoid huge token usage)
     resume_summary = _compact_resume(master)
 
     prompt = TAILOR_PROMPT.format(
@@ -133,12 +134,12 @@ def analyze_job(job: dict) -> dict | None:
 
         return {
             **job,
-            "fit_score":       fit_score,
-            "fit_reasoning":   result.get("fit_reasoning", ""),
-            "tailored_bullets":result.get("tailored_bullets", []),
-            "relevant_skills": result.get("relevant_skills", []),
-            "cover_letter":    result.get("cover_letter", ""),
-            "ats_keywords":    result.get("ats_keywords", []),
+            "fit_score":        fit_score,
+            "fit_reasoning":    result.get("fit_reasoning", ""),
+            "tailored_bullets": result.get("tailored_bullets", []),
+            "relevant_skills":  result.get("relevant_skills", []),
+            "cover_letter":     result.get("cover_letter", ""),
+            "ats_keywords":     result.get("ats_keywords", []),
         }
 
     except KeyError:
@@ -154,12 +155,10 @@ def _compact_resume(master: dict) -> str:
     """Compact master_resume.json into a token-efficient string for the prompt."""
     lines = []
 
-    # Summary
     basics = master.get("basics", {})
     lines.append(f"Name: {basics.get('name','')}")
     lines.append(f"Summary: {basics.get('summary','')}")
 
-    # Skills
     skills = master.get("skills", {})
     all_skills = []
     for v in skills.values():
@@ -167,7 +166,6 @@ def _compact_resume(master: dict) -> str:
             all_skills.extend(v)
     lines.append(f"Skills: {', '.join(all_skills[:30])}")
 
-    # Experience — all jobs with all bullets
     lines.append("\nExperience:")
     for exp in master.get("experience", []):
         lines.append(f"\n{exp.get('role','')} at {exp.get('company','')} "
@@ -175,12 +173,10 @@ def _compact_resume(master: dict) -> str:
         for bullet in exp.get("bullets", []):
             lines.append(f"  • {bullet}")
 
-    # Education
     lines.append("\nEducation:")
     for edu in master.get("education", []):
         lines.append(f"  {edu.get('degree','')} — {edu.get('institution','')}")
 
-    # Certifications
     certs = master.get("certifications", [])
     if certs:
         lines.append(f"\nCertifications: {', '.join(certs)}")
@@ -188,11 +184,6 @@ def _compact_resume(master: dict) -> str:
     return "\n".join(lines)
 
 
-# Expose _call_ai and _parse_json for other modules (form_questions.py)
+# Expose for other modules (form_questions.py)
 def _call_ai(prompt: str) -> str:
     return _call_groq(prompt)
-
-def _parse_json_public(raw: str) -> dict:
-    return _parse_json(raw)
-
-_parse_json = _parse_json_public
