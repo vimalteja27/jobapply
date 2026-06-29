@@ -34,21 +34,20 @@ from tracker import log_application, send_daily_digest
 from h1b_lookup import lookup_h1b_history, h1b_explanation
 from h1b_cap_exempt_targets import get_cap_exempt_tier
 
+# Platforms we can auto-submit to directly
+_SUBMITTABLE_SOURCES = {"greenhouse", "lever", "ashby", "workday"}
+
 
 def _h1b_priority_rank(job: dict) -> tuple:
     """
-    Sort key for H1B priority ordering. Lower rank = applied to first.
-
-    0 = Verified university (Tier 1)         — best: hires STEM OPT, no lottery
-    1 = Verified hospital/nonprofit/govt      — good: cap-exempt, often hires OPT
-    2 = Other detected cap-exempt             — cap-exempt but unverified track record
-    3 = H1B Sponsor (proven USCIS filer)      — reliable but subject to April lottery
-    4 = No H1B record                         — still applied, ask in interview
-
-    Within each band, newer postings are applied to first.
+    Sort key for priority ordering. Lower rank = applied to first.
+    Primary: H1B tier. Secondary: submittable source. Tertiary: date.
+    This ensures Greenhouse/Lever/Ashby/Workday jobs get processed
+    before Indeed jobs that may point to unresolvable custom portals.
     """
-    tier = job.get("h1b_tier", 0)
-    h1b  = job.get("h1b_history", "")
+    tier   = job.get("h1b_tier", 0)
+    h1b    = job.get("h1b_history", "")
+    source = job.get("source", "")
 
     if tier == 1:
         rank = 0
@@ -61,13 +60,12 @@ def _h1b_priority_rank(job: dict) -> tuple:
     else:
         rank = 4
 
-    # Newer posted_at sorts first within the same rank.
-    # We sort ascending overall, so invert the date string comparison
-    # by sorting on its negation via reverse marker — simplest fix:
-    # missing dates sort last, present dates sort newest-first.
-    posted = job.get("posted_at", "") or ""
-    has_date = 0 if posted else 1  # jobs with a date come before those without
-    return (rank, has_date, _DateDesc(posted))
+    # Within same H1B tier: auto-submittable sources first (0), others second (1)
+    submittable = 0 if source in _SUBMITTABLE_SOURCES else 1
+
+    posted   = job.get("posted_at", "") or ""
+    has_date = 0 if posted else 1
+    return (rank, submittable, has_date, _DateDesc(posted))
 
 
 class _DateDesc:
