@@ -1,6 +1,4 @@
-resumes/*.pdf
 logs/*.log
-*.pdf
 credentials.json
 oauth_client.json
 .env
