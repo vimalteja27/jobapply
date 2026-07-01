@@ -1,8 +1,8 @@
 name: ApplyRyt Job Bot
 
-on:
-  schedule:
-    - cron: "*/20 * * * *"
+# on:
+#   schedule:
+#     - cron: "*/20 * * * *"
   workflow_dispatch:
 
 jobs:
